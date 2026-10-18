@@ -1,0 +1,655 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Phiếu Học Tập Tương Tác - Tin Học 10</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            background: linear-gradient(135deg, #e0f2fe 0%, #ffedd5 100%);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow-x: hidden;
+        }
+        
+        .watermark {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) rotate(-30deg);
+            font-size: 5rem;
+            color: rgba(0, 0, 0, 0.04);
+            font-weight: bold;
+            white-space: nowrap;
+            pointer-events: none;
+            z-index: 0;
+            user-select: none;
+            text-align: center;
+            line-height: 1.5;
+        }
+
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(10px);
+            border-radius: 1rem;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+            position: relative;
+            z-index: 10;
+        }
+
+        .option-btn {
+            transition: all 0.2s ease;
+        }
+        
+        .option-btn:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        /* Colors for states */
+        .option-correct {
+            background-color: #22c55e !important; /* Green */
+            color: white !important;
+            border-color: #16a34a !important;
+        }
+
+        .option-wrong {
+            background-color: #ef4444 !important; /* Red */
+            color: white !important;
+            border-color: #dc2626 !important;
+        }
+
+        .tf-btn {
+            transition: all 0.2s;
+            border-width: 2px;
+        }
+        .tf-btn:not(:disabled):hover {
+            background-color: #f3f4f6;
+        }
+        
+        .bg-card-0 { background-color: #dcfce7; } /* Xanh lá nhạt */
+        .bg-card-1 { background-color: #e0f2fe; } /* Xanh dương nhạt */
+        .bg-card-2 { background-color: #fef08a; } /* Vàng nhạt */
+        .bg-card-3 { background-color: #fee2e2; } /* Đỏ nhạt */
+        .bg-card-4 { background-color: #ffffff; } /* Trắng */
+
+        .app-header {
+            display: flex;
+            justify-content: space-between;
+            padding: 1rem;
+            font-weight: bold;
+            color: #1e3a8a;
+            position: relative;
+            z-index: 20;
+        }
+
+        #next-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            background-color: #9ca3af;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="watermark">
+        Nguyen Tien <br> Nguyen Tien <br> Nguyen Tien
+    </div>
+
+    <header class="app-header text-sm md:text-base">
+        <div>Tin học 12</div>
+        <div class="text-right">Trường THPT Long Hải - Phước Tỉnh</div>
+    </header>
+
+    <main class="flex-grow flex items-center justify-center p-2 md:p-4">
+        
+        <!-- Màn hình Đăng nhập -->
+        <div id="login-screen" class="glass-panel w-full max-w-md p-6 md:p-8 text-center">
+            <h1 class="text-2xl font-bold mb-2 text-blue-800">PHIẾU HỌC TẬP TƯƠNG TÁC</h1>
+            <p class="text-md text-gray-600 mb-4 font-semibold">Ôn tập giữa HKI - Tin học 10</p>
+            
+            <p id="login-attempt-info" class="text-sm font-bold text-blue-600 mb-4 h-5"></p>
+
+            <div class="mb-4 text-left">
+                <label class="block text-sm font-semibold mb-2 text-gray-700" for="studentName">Họ và tên học sinh:</label>
+                <input type="text" id="studentName" class="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Nhập họ và tên của bạn...">
+            </div>
+            
+            <div class="mb-6 text-left">
+                <label class="block text-sm font-semibold mb-2 text-gray-700" for="studentClass">Lớp:</label>
+                <input type="text" id="studentClass" class="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="VD: 10A1...">
+            </div>
+            
+            <button onclick="startQuiz()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg transition duration-200 shadow-md">
+                BẮT ĐẦU LÀM BÀI
+            </button>
+            <p id="login-error" class="text-red-500 text-sm mt-3 hidden font-medium">Vui lòng nhập đầy đủ Họ tên và Lớp!</p>
+        </div>
+
+        <!-- Màn hình Câu hỏi -->
+        <div id="quiz-screen" class="glass-panel w-full max-w-3xl p-4 md:p-6 hidden flex flex-col h-full max-h-[90vh]">
+            
+            <!-- Thống kê -->
+            <div class="flex flex-wrap justify-between items-center mb-4 text-sm md:text-base font-bold bg-white p-3 rounded-lg shadow-sm border border-gray-100 gap-2">
+                <span class="text-purple-600">Lượt: <span id="stat-attempt" class="text-lg">0</span></span>
+                <span class="text-blue-700">Câu: <span id="stat-completed" class="text-lg">0/26</span></span>
+                <span class="text-green-600">Đúng: <span id="stat-correct" class="text-lg">0</span></span>
+                <span class="text-red-600">Sai: <span id="stat-wrong" class="text-lg">0</span></span>
+            </div>
+
+            <!-- Khung chứa nội dung câu hỏi -->
+            <div id="question-card" class="flex-grow p-4 md:p-6 rounded-xl shadow-inner mb-4 overflow-y-auto border border-gray-200">
+                <div id="section-title" class="text-sm font-bold text-blue-600 mb-2 uppercase tracking-wider"></div>
+                <h2 id="question-text" class="text-base md:text-lg font-bold text-gray-800 mb-5 leading-relaxed">Đang tải câu hỏi...</h2>
+                
+                <!-- Vùng chứa đáp án trắc nghiệm nhiều lựa chọn -->
+                <div id="options-container" class="space-y-3 hidden"></div>
+
+                <!-- Vùng chứa đáp án trắc nghiệm đúng sai -->
+                <div id="tf-container" class="space-y-4 hidden"></div>
+            </div>
+
+            <!-- Điều hướng -->
+            <div class="mt-auto">
+                <button id="next-btn" onclick="nextQuestion()" disabled class="w-full bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-3 px-4 rounded-lg text-lg transition duration-200 shadow-md">
+                    CÂU TIẾP THEO
+                </button>
+            </div>
+        </div>
+
+        <!-- Màn hình Kết quả -->
+        <div id="result-screen" class="glass-panel w-full max-w-md p-8 text-center hidden">
+            <h1 class="text-3xl font-bold mb-2 text-blue-800 uppercase">Hoàn thành!</h1>
+            <p id="student-info-display" class="text-gray-700 mb-6 font-semibold bg-gray-100 py-2 rounded-lg"></p>
+            
+            <div class="bg-white p-6 rounded-xl shadow-inner border border-gray-200 mb-6">
+                <div class="text-5xl font-black mb-2 text-blue-600" id="final-score-text">0/44</div>
+                <p class="text-gray-500 font-medium">Tổng số ý chọn Đúng</p>
+                <p class="text-xs text-gray-400 mt-1">(20 ý Trắc nghiệm + 24 ý Đúng/Sai)</p>
+            </div>
+
+            <p id="feedback-message" class="text-lg font-bold mb-4 px-2"></p>
+            
+            <button onclick="restartQuiz()" class="w-full bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-4 rounded-lg transition duration-200 shadow-md mb-3">
+                LÀM LẠI BÀI (ĐẢO CÂU)
+            </button>
+            <p class="text-xs text-gray-500 italic mt-2">Dữ liệu bài làm đã được đồng bộ lên Google Sheets.</p>
+        </div>
+
+    </main>
+
+    <script>
+        // --- CẤU HÌNH GOOGLE SHEETS ---
+        const GOOGLE_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbzaHKXIkB6htkphwxEa1SXrOcyuhFZckzjWDzTBlquXKJZdGXq6yAlWTlexjIkE8wK8oA/exec"; 
+
+        const rawMCQs = [
+            // Bài 2
+            { question: "Thiết bị thông minh được hiểu là gì?", options: ["Là thiết bị điện tử chỉ hoạt động hoàn toàn thủ công khi có con người bấm nút.", "Là các thiết bị điện tử có thể hoạt động một cách tự chủ trong một mức độ nhất định nhờ các phần mềm điều khiển được cài đặt sẵn.", "Là các thiết bị cơ khí hoàn toàn không sử dụng vi mạch điện tử hay phần mềm.", "Là thiết bị chỉ có khả năng kết nối mạng dây cố định và không thể trao đổi dữ liệu không dây."], answer: 1 },
+            { question: "Phát biểu nào sau đây KHÔNG phải là đặc điểm của thiết bị thông minh?", options: ["Có khả năng kết nối, xử lí và truyền dữ liệu.", "Có khả năng tự chủ ở một mức độ nhất định nhờ phần mềm điều khiển.", "Có khả năng ghi hình, phát hiện chuyển động hoặc kết nối Internet.", "Hoàn toàn phụ thuộc vào thao tác thủ công liên tục của con người trong mọi tình huống."], answer: 3 },
+            { question: "Cuộc cách mạng công nghiệp lần thứ tư (CMCN 4.0) gắn liền với nền tảng công nghệ nào chủ yếu?", options: ["Động cơ hơi nước và cơ giới hóa.", "Năng lượng điện và sản xuất dây chuyền tập trung.", "Công nghệ thông tin, Internet vạn vật (IoT), trí tuệ nhân tạo (AI) và tự động hóa.", "Động cơ đốt trong và năng lượng mặt trời cơ bản."], answer: 2 },
+            { question: "Internet vạn vật (IoT - Internet of Things) được hiểu là gì trong bối cảnh xã hội hiện đại?", options: ["Việc kết nối các thiết bị thông minh với nhau thông qua mạng để tự động thu thập và xử lí dữ liệu.", "Mạng lưới chỉ dùng riêng cho máy tính cá nhân truyền thống để trao đổi văn bản qua cáp quang.", "Hệ thống phần cứng máy tính dùng để in ấn tài liệu trong các văn phòng công ty.", "Hệ thống truyền hình cáp analog dùng cho các hộ gia đình giải trí."], answer: 0 },
+            { question: "Thành tựu nào của tin học đóng vai trò quan trọng trong việc giúp con người giao tiếp, học tập và chia sẻ thông tin trên toàn cầu qua các trang web và mạng xã hội?", options: ["Hệ điều hành DOS.", "World Wide Web (WWW) và Internet.", "Ngôn ngữ máy (mã máy).", "Đĩa cứng lưu trữ dữ liệu ngoại vi."], answer: 1 },
+            { question: "Phát biểu nào sau đây thể hiện đúng sự thay đổi về phương thức sản xuất trong cuộc cách mạng công nghiệp lần thứ tư?", options: ["Sử dụng hoàn toàn sức lao động thủ công thô sơ bằng tay.", "Tự động hóa quá trình sản xuất dựa trên hệ thống không gian mạng và thực ảo, trí tuệ nhân tạo.", "Sử dụng năng lượng nước và hơi nước để kéo khung cửi.", "Sản xuất tập trung quy mô lớn dựa trên động cơ điện đơn thuần."], answer: 1 },
+            { question: "Thành tựu tin học nào dưới đây giúp máy tính có khả năng nhận biết hình ảnh, giọng nói và mô phỏng tư duy của con người ở mức độ cao?", options: ["Hệ điều hành dòng lệnh.", "Trí tuệ nhân tạo (AI - Artificial Intelligence).", "Cáp mạng LAN truyền thống.", "Bảng mạch điện tử cắm dây thủ công."], answer: 1 },
+            { question: "Ý nghĩa của việc ứng dụng Big Data (Dữ liệu lớn) và Điện toán đám mây (Cloud Computing) trong đời sống là gì?", options: ["Lưu trữ dữ liệu thủ công trên giấy tờ truyền thống.", "Cung cấp khả năng xử lí dữ liệu khổng lồ, hỗ trợ phân tích và đưa ra quyết định nhanh chóng, chính xác.", "Làm giảm nhu cầu sử dụng Internet của các doanh nghiệp.", "Giới hạn khả năng chia sẻ thông tin giữa các hệ thống máy tính."], answer: 1 },
+            { question: "Trong nền kinh tế tri thức, yếu tố nào đóng vai trò chủ yếu đối với sự phát triển kinh tế?", options: ["Nguyên vật liệu thô và khoáng sản khai thác.", "Sức lao động cơ bắp phổ thông.", "Tri thức, thông tin và công nghệ cao.", "Số lượng nhà xưởng và máy móc cơ khí thế hệ cũ."], answer: 2 },
+            { question: "Một doanh nghiệp thương mại điện tử cần phân tích thói quen mua sắm của hàng triệu khách hàng từ lịch sử giao dịch trực tuyến để đưa ra gợi ý sản phẩm phù hợp. Công nghệ nào sau đây là phù hợp nhất để giải quyết bài toán xử lí dữ liệu khổng lồ đó?", options: ["Sử dụng sổ ghi chép giấy thủ công.", "Công nghệ Dữ liệu lớn (Big Data) và Trí tuệ nhân tạo (AI).", "Máy tính bỏ túi cầm tay không kết nối.", "Hệ thống máy in văn phòng đơn thuần."], answer: 1 },
+            // Bài 8
+            { question: "Phát biểu nào sau đây thể hiện đúng sự khác biệt cơ bản giữa mạng LAN và Internet về mặt quyền sở hữu?", options: ["Mạng LAN thuộc sở hữu của một cá nhân, gia đình hoặc cơ quan; Internet thuộc sở hữu của một tập đoàn viễn thông lớn.", "Mạng LAN có chủ sở hữu rõ ràng; Internet không có chủ sở hữu riêng mà hoạt động không có cơ quan quản lý tập trung nào.", "Cả mạng LAN và Internet đều không có chủ sở hữu thuộc về nhà nước.", "Internet thuộc sở hữu của các tổ chức phi lợi nhuận quốc tế, còn mạng LAN hoàn toàn miễn phí."], answer: 1 },
+            { question: "Phát biểu nào sau đây mô tả đúng nhất về vai trò của bộ định tuyến (Router) trong mạng máy tính?", options: ["Router chỉ dùng để kết nối các máy tính trong cùng một phòng làm việc.", "Router chỉ có chức năng truyền dữ liệu giữa các máy in và máy tính.", "Router dùng để kết nối các mạng LAN với nhau và định hướng đường đi cho dữ liệu khi đi ra ngoài mạng cục bộ.", "Router là thiết bị dùng để khuếch đại tín hiệu điện khi truyền qua quãng đường dài."], answer: 2 },
+            { question: "Tại sao việc sử dụng dịch vụ điện toán đám mây lại mang lại tính linh hoạt và độ sẵn sàng cao cho người dùng?", options: ["Vì người dùng bắt buộc phải mua phần cứng đắt tiền mới được sử dụng.", "Vì dữ liệu được lưu trữ trên một máy tính cá nhân cố định tại nhà.", "Vì người dùng không bị lệ thuộc vào phương tiện cá nhân, thời gian và địa điểm làm việc miễn là có kết nối Internet.", "Vì các dịch vụ này luôn miễn phí hoàn toàn dung lượng cho mọi đối tượng tổ chức."], answer: 2 },
+            { question: "Khi phân loại các dịch vụ đám mây, loại dịch vụ nào cho phép người thuê được sử dụng các phần mềm ứng dụng phục vụ trực tiếp cho hoạt động nghiệp vụ mà không cần cài đặt trên máy tính cá nhân?", options: ["Hạ tầng như một dịch vụ (IaaS).", "Nền tảng như một dịch vụ (PaaS).", "Phần mềm như một dịch vụ (SaaS).", "Mạng như một dịch vụ (NaaS)."], answer: 2 },
+            { question: "Khái niệm Kết nối vạn vật (Internet of Things - IoT) được hiểu chính xác nhất là gì?", options: ["Việc kết nối hàng triệu máy tính để bàn trên toàn cầu thông qua mạng Internet cáp quang.", "Việc liên kết các thiết bị thông minh để tự động thu thập, trao đổi và xử lí dữ liệu mà không nhất thiết phải có tương tác trực tiếp của con người.", "Mạng lưới các trang web thương mại điện tử kết nối người mua và người bán trên phạm vi toàn cầu.", "Hệ thống định vị toàn cầu GPS dùng để theo dõi vị trí của các phương tiện giao thông."], answer: 1 },
+            { question: "Phát biểu nào sau đây phân tích đúng về lợi ích kinh tế của điện toán đám mây đối với doanh nghiệp và cá nhân?", options: ["Doanh nghiệp phải đầu tư toàn bộ hệ thống máy chủ đắt tiền ngay từ đầu.", "Người dùng phải trả mức phí cố định hàng năm dù có sử dụng nhiều hay ít.", "Nhờ chia sẻ tài nguyên cho nhiều người, điện toán đám mây giúp phân tải dịch vụ và người dùng chỉ trả tiền theo mức sử dụng thực tế.", "Điện toán đám mây làm tăng chi phí vận hành do tốn kém tiền thuê đường truyền Internet tốc độ cao."], answer: 2 },
+            { question: "Thiết bị công tơ điện tử thông minh có gắn vi xử lí gửi số liệu điện năng tiêu thụ định kỳ về trung tâm dữ liệu qua mạng Internet thể hiện ứng dụng của công nghệ nào?", options: ["Trí tuệ nhân tạo (AI).", "Điện toán đám mây (Cloud Computing).", "Kết nối vạn vật (IoT).", "Thực tế ảo (VR)."], answer: 2 },
+            { question: "Hệ thống nhà thông minh (Smart home) có các cảm biến tự động bật/tắt điều hoà, đèn chiếu sáng hay khóa cửa nhận dạng khuôn mặt hoạt động dựa trên cốt lõi nào?", options: ["Sự tương tác thủ công hoàn toàn qua các công tắc gắn trên tường.", "Hệ thống mạng cục bộ không có kết nối ra bên ngoài nhằm bảo mật tuyệt đối.", "Sự tích hợp các thiết bị thông minh qua cảm biến và Internet để giám sát, điều phối từ xa.", "Chỉ sử dụng nguồn điện năng mặt trời độc lập không cần thiết bị điện tử."], answer: 2 },
+            { question: "Bạn An lưu trữ hàng nghìn bức ảnh cá nhân lên dịch vụ lưu trữ đám mây, giúp giảm nhu cầu lưu trữ trên máy và thuận tiện truy cập. Tình huống này minh họa cho việc sử dụng dịch vụ nào?", options: ["Sử dụng dịch vụ PaaS để lập trình phần mềm với chi phí cao.", "Sử dụng dịch vụ thuê hạ tầng/lưu trữ (thuộc điện toán đám mây) giúp tiết kiệm chi phí và linh hoạt truy cập dữ liệu mọi lúc mọi nơi.", "Sử dụng mạng LAN nội bộ để chia sẻ tệp tin giữa các máy tính trong gia đình.", "Sử dụng công nghệ Kết nối vạn vật (IoT) để tự động hóa việc chụp ảnh."], answer: 1 },
+            { question: "Trên đường cao tốc, ô tô được dán thẻ định danh RFID trên kính lái. Thiết bị đọc thẻ tự động nhận diện và trừ tiền tài khoản thu phí. Đây là ứng dụng thực tế của công nghệ nào?", options: ["Điện toán đám mây chuyên dụng cho doanh nghiệp vận tải.", "Mạng LAN cục bộ quy mô nhỏ trong trạm thu phí.", "Kết nối vạn vật (IoT) giúp thu thập dữ liệu tự động và xử lý thời gian thực.", "Trí tuệ nhân tạo chuyên nhận diện khuôn mặt tài xế."], answer: 2 },
+            // Bài 9
+            { question: "Dấu hiệu nào cho thấy người dùng có nguy cơ bị lộ lọt dữ liệu và thông tin cá nhân?", options: ["Xuất hiện liên tục các cuộc gọi và tin nhắn lạ chào mời.", "Thiết bị tự động kết nối thành công với mạng Wi-Fi tại nhà.", "Mức dung lượng pin của thiết bị duy trì lâu hơn mức bình thường.", "Quá trình tải các tài liệu học tập diễn ra ổn định và nhanh chóng."], answer: 0 },
+            { question: "Khi sử dụng mạng máy tính công cộng, hành vi nào sau đây được xem là an toàn?", options: ["Tiến hành chuyển tiền ngân hàng mà không sử dụng mạng riêng ảo.", "Lưu thông tin đăng nhập tài khoản trên các trình duyệt công cộng.", "Tắt tính năng chia sẻ tệp và tránh truy cập website thiếu mã hóa.", "Đăng tải toàn bộ giấy tờ tùy thân cá nhân lên các diễn đàn mở."], answer: 2 },
+            { question: "Cách tạo và sử dụng mật khẩu nào sau đây an toàn hơn?", options: ["Dùng mật khẩu dài, khó đoán, không chứa thông tin cá nhân và riêng biệt cho từng tài khoản.", "Đặt theo số căn cước công dân hoặc ngày tháng năm sinh của cá nhân hoặc của người thân.", "Chọn dãy số tự nhiên liên tiếp từ một đến tám cho tiện nhớ.", "Sử dụng tên riêng của bản thân ghép cùng tên trường học."], answer: 0 },
+            { question: "Tính năng xác thực hai yếu tố (2FA) mang lại lợi ích chủ yếu nào cho người sử dụng?", options: ["Tăng dung lượng lưu trữ tài nguyên trên dịch vụ đám mây.", "Tăng cường bảo vệ tài khoản bằng một yếu tố xác thực khác ngoài mật khẩu.", "Đẩy nhanh tốc độ truy cập mạng Internet khi lướt web học tập.", "Cho phép nhiều người cùng truy cập một tài khoản trực tuyến."], answer: 1 },
+            { question: "Mục đích cơ bản của hành động che chắn bàn phím khi nhập mật mã tại các cây ATM là gì?", options: ["Giúp cho bề mặt phím bấm luôn được sạch sẽ và không dính vết bẩn.", "Phòng tránh các thiết bị quay lén ghi lại thao tác bấm mã bí mật.", "Giúp cho nút bấm nhận diện chính xác và tránh bị lỗi đường truyền.", "Tạo sự kín đáo và thể hiện phép lịch sự với những người đứng sau."], answer: 1 },
+            { question: "Loại mã độc nào ngụy trang dưới dạng phần mềm hữu ích để lừa người dùng cài đặt?", options: ["Phần mềm mã độc ngựa thành Troy (Trojan).", "Phần mềm tống tiền mã hóa dữ liệu (Ransomware).", "Mã độc tự nhân bản qua đường mạng (Worm).", "Các thư điện tử quảng cáo rác (Spam Mail)."], answer: 0 },
+            { question: "Phần mềm tống tiền (Ransomware) gây hại chủ yếu cho hệ thống bằng phương thức nào?", options: ["Làm cháy hỏng các linh kiện vi mạch phần cứng trong thùng máy tính.", "Gửi các thư điện tử khen ngợi liên tục tới tất cả bạn bè trong danh bạ.", "Tự động điều chỉnh độ sáng màn hình hiển thị lên mức cao nhất.", "Tự ý mã hóa dữ liệu quan trọng rồi yêu cầu tiền chuộc để giải mã."], answer: 3 },
+            { question: "Phần mềm gián điệp (Spyware) thường thực hiện hành vi nguy hại nào trên máy tính?", options: ["Nâng cấp dung lượng bộ nhớ tạm thời cho toàn bộ hệ thống máy tính.", "Hỗ trợ hệ thống tải xuống các bản vá lỗi bảo mật định kỳ nhanh hơn.", "Lén lút theo dõi bàn phím, chụp ảnh màn hình và đánh cắp thông tin.", "Tự động sửa chữa các tệp tin hệ điều hành bị hỏng hóc hoặc thiếu sót."], answer: 2 },
+            { question: "Thao tác an toàn nhất khi tải một tệp thực thi (.exe) từ trên mạng Internet về máy là gì?", options: ["Kích đúp chuột mở trực tiếp tệp tin ngay sau khi vừa tải xuống xong.", "Quét tệp bằng phần mềm diệt virus cập nhật trước khi chạy cài đặt.", "Tắt toàn bộ tường lửa và hệ thống bảo vệ máy tính để cài đặt thuận lợi.", "Sửa đổi phần mở rộng tệp tin sang dạng văn bản để xem nội dung mã."], answer: 1 },
+            { question: "Mục đích cốt lõi của việc cập nhật cơ sở dữ liệu mẫu virus định kỳ cho phần mềm là gì?", options: ["Giúp giải phóng bớt dung lượng bộ nhớ còn trống trên ổ đĩa cứng.", "Đồng bộ toàn bộ các tài khoản mạng xã hội của người dùng lên máy chủ.", "Hạn chế mức tiêu hao dung lượng đường truyền dữ liệu mạng hàng tháng.", "Nhận diện và ngăn chặn kịp thời các biến thể mã độc mới xuất hiện."], answer: 3 },
+            // Bài 11
+            { question: "Hành vi nào sau đây thể hiện văn hóa ứng xử đúng đắn trên mạng xã hội?", options: ["Dùng lời lẽ thô tục để chỉ trích ý kiến trái chiều.", "Tôn trọng quan điểm khác biệt và giao tiếp lịch sự.", "Chia sẻ hình ảnh nhạy cảm của bạn bè khi chưa hỏi.", "Hùa theo đám đông để lăng nhục một tài khoản cá nhân."], answer: 1 },
+            { question: "Trong nhóm học tập, Minh đưa ra ý kiến sai bị các bạn chế giễu. Nếu là thành viên nhóm, em nên làm gì?", options: ["Đề nghị Minh xóa ý kiến.", "Góp ý bằng dẫn chứng và đề nghị các bạn dừng chế giễu Minh.", "Chuyển cuộc trao đổi sang nhóm khác.", "Chụp lại các bình luận đăng lên trang cá nhân bênh vực Minh."], answer: 1 },
+            { question: "Ảnh ghi rõ: “Sử dụng phi thương mại, phải ghi tên tác giả, không chỉnh sửa”. Cách làm nào phù hợp khi dùng ảnh làm áp phích có chèn thêm thông điệp?", options: ["Giữ nguyên ảnh, ghi tên tác giả và đặt thông điệp ở phần riêng bên ngoài ảnh.", "Cắt ảnh cho vừa bố cục, ghi tên tác giả và đặt thông điệp bên dưới ảnh.", "Giữ nguyên ảnh, đặt thông điệp bên ngoài và chỉ ghi nguồn là “Internet”.", "Chèn thông điệp trực tiếp lên ảnh và ghi đầy đủ tên tác giả."], answer: 0 },
+            { question: "Tự ý sửa chữa, cắt xén, làm sai lệch nội dung gây phương hại đến danh dự tác giả trực tiếp xâm phạm quyền nào?", options: ["Quy chuẩn định dạng văn bản hành chính.", "Tiêu chuẩn kĩ thuật in ấn.", "Quyền bảo vệ sự toàn vẹn tác phẩm của tác giả gốc.", "Quy định về phông chữ."], answer: 2 },
+            { question: "Khi mua một phần mềm có bản quyền, người mua thực chất nhận được quyền gì?", options: ["Quyền sử dụng phần mềm theo điều khoản của nhà sản xuất.", "Quyền sở hữu toàn bộ mã nguồn ban đầu của phần mềm.", "Quyền tự do bán lại phần mềm cho các công ty khác dùng.", "Quyền thay đổi tên phần mềm thành tên của chính mình."], answer: 0 },
+            { question: "Tại sao việc sử dụng phần mềm bẻ khóa (crack) lại tiềm ẩn nhiều nguy cơ mất an toàn?", options: ["Làm giảm tốc độ hiển thị hình ảnh của màn hình máy tính.", "Bản crack thường bị kẻ xấu cài cắm thêm các loại mã độc.", "Khiến máy tính không thể kết nối được với chuột có dây.", "Tự động xóa bỏ toàn bộ hệ điều hành Windows sau vài giờ."], answer: 1 },
+            { question: "Một bức ảnh phong cảnh do em tự chụp và đăng lên mạng thuộc quyền sở hữu của ai?", options: ["Thuộc sở hữu của công ty sản xuất điện thoại.", "Thuộc sở hữu chung của toàn bộ người dùng MXH.", "Thuộc quyền quản lí tuyệt đối của nhà cung cấp dịch vụ mạng.", "Thuộc quyền tác giả của chính em kể từ khi chụp bức ảnh đó."], answer: 3 },
+            { question: "Khi phát hiện ai đó sử dụng tài khoản mạng mạo danh mình, em nên làm việc gì đầu tiên?", options: ["Nhắn tin chửi bới kẻ mạo danh trên tất cả các diễn đàn.", "Báo cáo tài khoản giả mạo cho quản trị viên nền tảng mạng.", "Xóa tài khoản thật của mình.", "Nhờ người thân chuyển tiền cho kẻ mạo danh để xin lại nick."], answer: 1 },
+            { question: "Tự ý sao chép và đăng toàn bộ một bộ phim có bản quyền lên trang cá nhân cho mọi người xem miễn phí khi chưa được phép là hành vi gì?", options: ["Đóng góp tích cực cho phong trào phổ biến văn hóa.", "Hành vi hợp pháp vì không thu tiền vé.", "Giúp đoàn làm phim quảng bá sản phẩm.", "Xâm phạm quyền tác giả đối với bộ phim."], answer: 3 },
+            { question: "Hành vi lan truyền video clip bạo lực học đường để câu lượt xem, chế giễu nạn nhân dẫn đến điều gì?", options: ["Giúp giảm thiểu triệt để tình trạng bạo lực.", "Được pháp luật khuyến khích.", "Không gây ảnh hưởng xấu gì.", "Tiếp tay cho bạo lực học đường và gây tổn thương nặng nề cho nạn nhân."], answer: 3 }
+        ];
+
+        const rawTFs = [
+            // Bài 2
+            { context: "Xét các đặc điểm và vai trò của thiết bị thông minh trong đời sống:", subs: [
+                { text: "a) Đồng hồ vạn niên hiển thị lịch và giờ là một thiết bị thông minh vì có cài sẵn phần mềm điều khiển phức tạp và kết nối Internet rộng rãi.", ans: false },
+                { text: "b) Thiết bị thông minh là thiết bị điện tử có khả năng hoạt động tự chủ ở mức độ nhất định nhờ các phần mềm định sẵn.", ans: true },
+                { text: "c) Việc tích hợp trí tuệ nhân tạo giúp các thiết bị thông minh có khả năng học tập, nhận biết giọng nói và hình ảnh giống con người.", ans: true },
+                { text: "d) Để lắp đặt hệ thống camera an ninh tự động cảnh báo đột nhập tại nhà, gia đình cần sử dụng thiết bị thông minh có kết nối mạng và tính năng xử lí dữ liệu.", ans: true }
+            ]},
+            { context: "Xét về các cuộc cách mạng công nghiệp và Internet vạn vật (IoT):", subs: [
+                { text: "a) Cuộc cách mạng công nghiệp lần thứ tư bắt đầu từ cuối thế kỉ XVIII với sự xuất hiện của động cơ hơi nước.", ans: false },
+                { text: "b) Internet vạn vật (IoT) là việc kết nối các thiết bị thông minh với nhau qua mạng để tự động thu thập và trao đổi dữ liệu.", ans: true },
+                { text: "c) IoT đóng vai trò là cốt lõi trong các hệ thống nhà thông minh, thành phố thông minh và sản xuất tự động hóa hiện đại.", ans: true },
+                { text: "d) Để theo dõi độ ẩm đất và điều khiển tưới cây từ xa qua Internet, người nông dân có thể ứng dụng IoT kết hợp cảm biến độ ẩm.", ans: true }
+            ]},
+            { context: "Xét về sự phát triển của Tin học và các thành tựu ứng dụng:", subs: [
+                { text: "a) Hệ điều hành Windows, macOS, Android và iOS là các hệ điều hành phổ biến được dùng để điều hành máy tính và thiết bị di động.", ans: true },
+                { text: "b) World Wide Web (WWW) ra đời vào năm 1983 và giao thức TCP/IP ra đời năm 1992.", ans: false },
+                { text: "c) Sự phát triển của Internet và các ứng dụng trực tuyến đã thay đổi hoàn toàn cách thức giao tiếp, học tập và làm việc của con người.", ans: true },
+                { text: "d) Để tra cứu thông tin nhanh chóng và nộp bài tập trực tuyến, học sinh cần sử dụng máy tính hoặc điện thoại không cần có kết nối Internet.", ans: false }
+            ]},
+            // Bài 8
+            { context: "Xét về các đặc điểm cấu trúc và phạm vi của mạng máy tính:", subs: [
+                { text: "a) Mạng LAN có phạm vi địa lí nhỏ như gia đình, trường học hoặc công ty.", ans: true },
+                { text: "b) Internet là mạng diện rộng có quy mô toàn cầu.", ans: true },
+                { text: "c) Mạng LAN bắt buộc phải kết nối ra toàn cầu thông qua các bộ định tuyến và nhà cung cấp dịch vụ Internet mới có thể hoạt động chia sẻ tài liệu nội bộ.", ans: false },
+                { text: "d) Khi muốn kết nối hai văn phòng ở hai thành phố khác nhau an toàn, cần liên kết các mạng LAN của từng văn phòng thông qua mạng diện rộng (Internet) bằng thiết bị định tuyến.", ans: true }
+            ]},
+            { context: "Khi tìm hiểu về các loại dịch vụ điện toán đám mây cơ bản (SaaS, PaaS, IaaS):", subs: [
+                { text: "a) Phần mềm như một dịch vụ được viết tắt là SaaS.", ans: true },
+                { text: "b) Hạ tầng như một dịch vụ được viết tắt là IaaS.", ans: true },
+                { text: "c) Google Docs, Zoom hay Google Drive đều không phải là dịch vụ điện toán đám mây.", ans: false },
+                { text: "d) Thuê máy chủ ảo và không gian lưu trữ từ nhà cung cấp điện toán đám mây để xây dựng ứng dụng di động là ứng dụng mô hình IaaS.", ans: true }
+            ]},
+            { context: "Xét về khái niệm và lợi ích của Kết nối vạn vật (IoT):", subs: [
+                { text: "a) IoT là viết tắt của cụm từ tiếng Anh Internet of Times.", ans: false },
+                { text: "b) Hệ thống nhà thông minh (Smart home) là một trong những ví dụ phổ biến của IoT trong đời sống hiện đại.", ans: true },
+                { text: "c) Các thiết bị trong mạng IoT bắt buộc phải có sự điều khiển trực tiếp của con người qua bàn phím mới có thể trao đổi dữ liệu với nhau.", ans: false },
+                { text: "d) Nông trại thông minh ứng dụng cảm biến tự động kích hoạt tưới tiêu qua Internet là ứng dụng thực tế hiệu quả của IoT.", ans: true }
+            ]},
+            // Bài 9
+            { context: "Minh sử dụng chung ngày sinh 15082008 làm mật khẩu cho mọi nền tảng (Facebook, Zalo, Gmail...):", subs: [
+                { text: "a) Mật khẩu tạo từ ngày sinh cá nhân thuộc nhóm yếu và rất dễ bị tin tặc bẻ khóa bằng công cụ tự động.", ans: true },
+                { text: "b) Đặt duy nhất một mật khẩu cho mọi dịch vụ giúp nâng cao năng lực an toàn thông tin của người dùng.", ans: false },
+                { text: "c) Minh nên sử dụng mật khẩu dài, khó đoán và riêng biệt cho từng tài khoản.", ans: true },
+                { text: "d) Việc bật tính năng xác thực hai yếu tố là không cần thiết vì chỉ làm kéo dài thời gian đăng nhập.", ans: false }
+            ]},
+            { context: "Tuấn tìm kiếm bản bẻ khóa (crack) của phần mềm đồ họa đắt tiền từ trang web lạ. Tệp yêu cầu tắt hoàn toàn diệt virus trước khi cài đặt:", subs: [
+                { text: "a) Ngựa gỗ Trojan thường ngụy trang bên trong các bản phần mềm lậu để đánh lừa người dùng tải về.", ans: true },
+                { text: "b) Yêu cầu vô hiệu hóa công cụ diệt virus là thao tác an toàn chứng minh phần mềm không có mã độc hại.", ans: false },
+                { text: "c) Hành động tắt phần mềm bảo vệ sẽ mở đường cho tin tặc xâm nhập và kiểm soát toàn bộ máy tính.", ans: true },
+                { text: "d) Tuấn nên xóa tệp lạ và chọn giải pháp ứng dụng nguồn mở miễn phí hợp pháp để phục vụ công việc.", ans: true }
+            ]},
+            { context: "Tại quán cà phê, Hoa kết nối vào mạng Wi-Fi mở không mật khẩu để thực hiện thanh toán hóa đơn bằng thẻ tín dụng:", subs: [
+                { text: "a) Mạng không dây công cộng tiềm ẩn rủi ro bị kẻ xấu chặn bắt gói tin và đánh cắp thông tin thẻ cá nhân.", ans: true },
+                { text: "b) Giao thức bảo mật có biểu tượng ổ khóa giúp mã hóa các thông tin trao đổi an toàn hơn chuẩn cơ bản.", ans: true },
+                { text: "c) Người dùng có thể an tâm tuyệt đối khi nhập mã bảo mật thẻ thanh toán trên mọi điểm Wi-Fi miễn phí.", ans: false },
+                { text: "d) Hoa nên chuyển đổi sang kết nối dữ liệu mạng di động cá nhân để thực hiện giao dịch tài chính an toàn.", ans: true }
+            ]},
+            // Bài 11
+            { context: "An mua giấy phép sử dụng phần mềm học tập (chỉ cho phép 1 máy). Bạn cùng lớp đề nghị chia sẻ mã kích hoạt:", subs: [
+                { text: "a) Giấy phép sử dụng phần mềm quy định phạm vi và điều kiện người dùng được phép sử dụng phần mềm.", ans: true },
+                { text: "b) Mua quyền sử dụng phần mềm đồng nghĩa với việc trở thành chủ sở hữu quyền tác giả của phần mềm đó.", ans: false },
+                { text: "c) Cài thêm phần mềm trên máy của bạn bằng cùng giấy phép sẽ vượt quá phạm vi sử dụng được cho phép.", ans: true },
+                { text: "d) An nên chia sẻ mã kích hoạt cho bạn, với điều kiện bạn chỉ dùng phần mềm để học tập.", ans: false }
+            ]},
+            { context: "Huy phát hiện một tài khoản dùng tên và ảnh của mình để nhắn tin hỏi vay tiền bạn bè:", subs: [
+                { text: "a) Mạo danh người khác để lừa người dùng là hành vi không phù hợp trong môi trường số.", ans: true },
+                { text: "b) Người dùng có thể sử dụng chức năng báo cáo của nền tảng khi phát hiện tài khoản giả mạo.", ans: true },
+                { text: "c) Tài khoản giả mạo có thể khiến bạn bè nhầm người gửi tin nhắn và gây ảnh hưởng đến uy tín của Huy.", ans: true },
+                { text: "d) Huy phải xác định được người tạo tài khoản giả mạo rồi mới có thể báo cáo tài khoản đó.", ans: false }
+            ]},
+            { context: "Trong giờ sinh hoạt, Tuấn chụp ảnh Mai. Mai đề nghị không đăng lên mạng. Nhưng Tuấn vẫn định đăng vào nhóm kín của lớp:", subs: [
+                { text: "a) Tôn trọng sự riêng tư của người khác là một yêu cầu của văn hóa ứng xử trong môi trường số.", ans: true },
+                { text: "b) Đăng ảnh vào nhóm kín thì không cần quan tâm đến sự đồng ý của người có trong ảnh.", ans: false },
+                { text: "c) Việc đăng ảnh trái với mong muốn có thể khiến Mai cảm thấy bị thiếu tôn trọng, dù chỉ chia sẻ trong nhóm lớp.", ans: true },
+                { text: "d) Tuấn nên giữ ảnh riêng và chỉ chia sẻ nếu Mai đồng ý với mục đích sử dụng ảnh.", ans: true }
+            ]}
+        ];
+
+        let questions = [];
+        let currentQuestionIndex = 0;
+        let correctAnswers = 0; // Counts total correct parts (20 from MCQ + 24 from TF)
+        let wrongAnswers = 0;
+        let currentQuestionAnsweredCount = 0; // to track completion of T/F sub-questions
+        
+        let studentInfo = { name: "", class: "", attempts: 0 };
+        const bgClasses = ['bg-card-0', 'bg-card-1', 'bg-card-2', 'bg-card-3', 'bg-card-4'];
+
+        function shuffleArray(array) {
+            let arr = JSON.parse(JSON.stringify(array));
+            for (let i = arr.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [arr[i], arr[j]] = [arr[j], arr[i]];
+            }
+            return arr;
+        }
+
+        // Khởi tạo âm thanh trực tiếp bằng mã lập trình (không dùng file mp3 ngoài để tránh lỗi chặn link)
+        let audioCtx = null;
+        function initAudio() {
+            if (!audioCtx) {
+                const AudioContext = window.AudioContext || window.webkitAudioContext;
+                audioCtx = new AudioContext();
+            }
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+        }
+
+        function playSound(type) {
+            try {
+                initAudio();
+                const osc = audioCtx.createOscillator();
+                const gainNode = audioCtx.createGain();
+
+                osc.connect(gainNode);
+                gainNode.connect(audioCtx.destination);
+
+                if (type === 'correct') {
+                    // Âm thanh "Ting!" vang và sáng cho câu đúng
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(1200, audioCtx.currentTime); // Tần số cao
+                    gainNode.gain.setValueAtTime(0, audioCtx.currentTime);
+                    gainNode.gain.linearRampToValueAtTime(0.5, audioCtx.currentTime + 0.02);
+                    gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.5);
+                    osc.start(audioCtx.currentTime);
+                    osc.stop(audioCtx.currentTime + 0.5);
+                } else {
+                    // Âm thanh "Buzzer" trầm cho câu sai
+                    osc.type = 'square';
+                    osc.frequency.setValueAtTime(150, audioCtx.currentTime); // Tần số thấp
+                    gainNode.gain.setValueAtTime(0, audioCtx.currentTime);
+                    gainNode.gain.linearRampToValueAtTime(0.2, audioCtx.currentTime + 0.02);
+                    gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.3);
+                    osc.start(audioCtx.currentTime);
+                    osc.stop(audioCtx.currentTime + 0.3);
+                }
+            } catch (e) {
+                console.log("Trình duyệt không hỗ trợ Audio");
+            }
+        }
+
+        // Live input update for attempt counting
+        document.getElementById('studentName').addEventListener('input', function() {
+            const name = this.value.trim();
+            const attemptInfo = document.getElementById('login-attempt-info');
+            if (name) {
+                const key = `tin10_attempts_${name.toLowerCase()}`;
+                const attempts = parseInt(localStorage.getItem(key) || 0);
+                attemptInfo.innerText = attempts > 0 ? `Số lượt đã làm bài trước đây: ${attempts} lượt.` : `Chào mừng bạn lần đầu làm bài!`;
+            } else {
+                attemptInfo.innerText = '';
+            }
+        });
+
+        function startQuiz() {
+            const name = document.getElementById('studentName').value.trim();
+            const cls = document.getElementById('studentClass').value.trim();
+
+            if (!name || !cls) {
+                document.getElementById('login-error').classList.remove('hidden');
+                return;
+            }
+            
+            // Manage attempts
+            const key = `tin10_attempts_${name.toLowerCase()}`;
+            let attempts = parseInt(localStorage.getItem(key) || 0) + 1;
+            localStorage.setItem(key, attempts);
+
+            studentInfo = { name, class: cls, attempts };
+            document.getElementById('stat-attempt').innerText = attempts;
+
+            document.getElementById('login-screen').classList.add('hidden');
+            document.getElementById('result-screen').classList.add('hidden');
+            document.getElementById('quiz-screen').classList.remove('hidden');
+
+            currentQuestionIndex = 0;
+            correctAnswers = 0;
+            wrongAnswers = 0;
+            
+            let selectedMCQs, selectedTFs;
+
+            if (attempts === 1) {
+                // Lượt 1: Giữ nguyên thứ tự câu hỏi và đáp án theo đúng đề cương
+                selectedMCQs = rawMCQs.slice(0, 20); 
+                selectedTFs = rawTFs.slice(0, 6);
+
+                selectedMCQs.forEach(q => {
+                    q.type = 'mcq';
+                    q.shuffledOptions = q.options.map((opt, idx) => ({ text: opt, isCorrect: idx === q.answer }));
+                });
+            } else {
+                // Từ lượt 2 trở đi: Đảo ngẫu nhiên bộ câu hỏi và đáp án
+                selectedMCQs = shuffleArray(rawMCQs).slice(0, 20);
+                selectedTFs = shuffleArray(rawTFs).slice(0, 6);
+
+                selectedMCQs.forEach(q => {
+                    q.type = 'mcq';
+                    let opts = q.options.map((opt, idx) => ({ text: opt, isCorrect: idx === q.answer }));
+                    q.shuffledOptions = shuffleArray(opts);
+                });
+            }
+
+            // Format TFs (Các ý a,b,c,d trong câu Đúng/Sai luôn giữ nguyên thứ tự)
+            selectedTFs.forEach(q => {
+                q.type = 'tf';
+            });
+
+            questions = [...selectedMCQs, ...selectedTFs];
+            
+            updateStats();
+            showQuestion();
+        }
+
+        function updateStats() {
+            document.getElementById('stat-completed').innerText = `${currentQuestionIndex}/${questions.length}`;
+            document.getElementById('stat-correct').innerText = correctAnswers;
+            document.getElementById('stat-wrong').innerText = wrongAnswers;
+        }
+
+        function showQuestion() {
+            currentQuestionAnsweredCount = 0;
+            document.getElementById('next-btn').disabled = true;
+
+            const q = questions[currentQuestionIndex];
+            const qCard = document.getElementById('question-card');
+            
+            qCard.className = `flex-grow p-4 md:p-6 rounded-xl shadow-inner mb-4 overflow-y-auto border border-gray-200 ${bgClasses[currentQuestionIndex % bgClasses.length]}`;
+
+            const sectionTitle = document.getElementById('section-title');
+            const optionsContainer = document.getElementById('options-container');
+            const tfContainer = document.getElementById('tf-container');
+            
+            if (q.type === 'mcq') {
+                sectionTitle.innerText = `Phần I: Trắc nghiệm nhiều lựa chọn (${currentQuestionIndex + 1}/20)`;
+                document.getElementById('question-text').innerText = `Câu ${currentQuestionIndex + 1}: ${q.question}`;
+                
+                optionsContainer.innerHTML = '';
+                optionsContainer.classList.remove('hidden');
+                tfContainer.classList.add('hidden');
+
+                q.shuffledOptions.forEach((opt, index) => {
+                    const btn = document.createElement('button');
+                    btn.className = 'option-btn w-full text-left p-4 bg-white border-2 border-gray-200 rounded-lg text-gray-700 font-medium break-words';
+                    btn.innerHTML = `<span class="font-bold mr-2 text-blue-700">${String.fromCharCode(65 + index)}.</span> ${opt.text}`;
+                    btn.onclick = () => selectAnswerMCQ(btn, opt.isCorrect, q.shuffledOptions);
+                    optionsContainer.appendChild(btn);
+                });
+            } else {
+                let tfIndex = currentQuestionIndex - 20 + 1;
+                sectionTitle.innerText = `Phần II: Trắc nghiệm Đúng/Sai (${tfIndex}/6)`;
+                document.getElementById('question-text').innerText = `Câu ${tfIndex}: ${q.context}`;
+                
+                tfContainer.innerHTML = '';
+                tfContainer.classList.remove('hidden');
+                optionsContainer.classList.add('hidden');
+
+                q.subs.forEach((sub, subIdx) => {
+                    const row = document.createElement('div');
+                    row.className = 'bg-white p-3 rounded-lg shadow-sm border border-gray-100 flex flex-col md:flex-row justify-between items-start md:items-center gap-3';
+                    
+                    const textDiv = document.createElement('div');
+                    textDiv.className = 'text-sm md:text-base text-gray-700 font-medium flex-1';
+                    textDiv.innerText = sub.text;
+
+                    const btnGroup = document.createElement('div');
+                    btnGroup.className = 'flex gap-2 w-full md:w-auto mt-2 md:mt-0';
+
+                    const btnTrue = document.createElement('button');
+                    btnTrue.className = 'tf-btn flex-1 md:flex-none px-5 py-2 rounded-md font-bold text-gray-600 border-gray-300';
+                    btnTrue.innerText = 'Đúng';
+                    
+                    const btnFalse = document.createElement('button');
+                    btnFalse.className = 'tf-btn flex-1 md:flex-none px-5 py-2 rounded-md font-bold text-gray-600 border-gray-300';
+                    btnFalse.innerText = 'Sai';
+
+                    // Logic click cho T/F
+                    btnTrue.onclick = () => selectAnswerTF(btnTrue, btnFalse, true, sub.ans);
+                    btnFalse.onclick = () => selectAnswerTF(btnFalse, btnTrue, false, sub.ans);
+
+                    btnGroup.appendChild(btnTrue);
+                    btnGroup.appendChild(btnFalse);
+                    
+                    row.appendChild(textDiv);
+                    row.appendChild(btnGroup);
+                    tfContainer.appendChild(row);
+                });
+            }
+        }
+
+        function selectAnswerMCQ(selectedBtn, isCorrect, allOptions) {
+            if (currentQuestionAnsweredCount > 0) return;
+            currentQuestionAnsweredCount = 1;
+
+            const buttons = document.getElementById('options-container').children;
+
+            if (isCorrect) {
+                selectedBtn.classList.add('option-correct');
+                correctAnswers++;
+                playSound('correct');
+            } else {
+                selectedBtn.classList.add('option-wrong');
+                wrongAnswers++;
+                playSound('wrong');
+                
+                // Show the right answer
+                for (let i = 0; i < buttons.length; i++) {
+                    if (allOptions[i].isCorrect) {
+                        buttons[i].classList.add('option-correct');
+                        buttons[i].classList.remove('border-gray-200');
+                    }
+                }
+            }
+
+            // Disable rest
+            for (let i = 0; i < buttons.length; i++) {
+                buttons[i].disabled = true;
+                if(buttons[i] !== selectedBtn && !allOptions[i].isCorrect) {
+                    buttons[i].style.opacity = '0.5';
+                }
+            }
+
+            updateStats();
+            document.getElementById('next-btn').disabled = false;
+        }
+
+        function selectAnswerTF(selectedBtn, unselectedBtn, userChoice, correctChoice) {
+            // Lock this specific sub-question row
+            selectedBtn.disabled = true;
+            unselectedBtn.disabled = true;
+            unselectedBtn.style.opacity = '0.4';
+
+            if (userChoice === correctChoice) {
+                selectedBtn.classList.add('option-correct');
+                selectedBtn.classList.remove('border-gray-300', 'text-gray-600');
+                correctAnswers++;
+                playSound('correct');
+            } else {
+                selectedBtn.classList.add('option-wrong');
+                selectedBtn.classList.remove('border-gray-300', 'text-gray-600');
+                wrongAnswers++;
+                playSound('wrong');
+                
+                // Show correct choice softly
+                unselectedBtn.style.opacity = '1';
+                unselectedBtn.classList.add('bg-green-100', 'border-green-500', 'text-green-700');
+            }
+
+            currentQuestionAnsweredCount++;
+            updateStats();
+
+            // If all 4 parts are answered, enable Next
+            if (currentQuestionAnsweredCount === 4) {
+                document.getElementById('next-btn').disabled = false;
+            }
+        }
+
+        function nextQuestion() {
+            currentQuestionIndex++;
+            updateStats();
+            if (currentQuestionIndex < questions.length) {
+                showQuestion();
+            } else {
+                showResults();
+            }
+        }
+
+        function showResults() {
+            document.getElementById('quiz-screen').classList.add('hidden');
+            document.getElementById('result-screen').classList.remove('hidden');
+
+            document.getElementById('student-info-display').innerText = `Học sinh: ${studentInfo.name} - Lớp: ${studentInfo.class}`;
+            // Tổng điểm tối đa: 20 MCQs + (6 T/F * 4 ý) = 44 điểm/ý
+            document.getElementById('final-score-text').innerText = `${correctAnswers}/44`;
+            
+            const msgEl = document.getElementById('feedback-message');
+            const percent = correctAnswers / 44;
+            
+            if (percent === 1) {
+                msgEl.innerText = "Tuyệt vời! Bạn đã hoàn thành xuất sắc 100%!";
+                msgEl.className = "text-xl font-bold mb-4 text-green-600";
+            } else if (percent >= 0.75) {
+                msgEl.innerText = "Rất tốt! Bạn nắm vững hầu hết kiến thức cơ bản.";
+                msgEl.className = "text-xl font-bold mb-4 text-blue-600";
+            } else if (percent >= 0.5) {
+                msgEl.innerText = "Đạt mức Khá. Hãy xem lại những phần làm sai để rút kinh nghiệm nhé!";
+                msgEl.className = "text-xl font-bold mb-4 text-yellow-600";
+            } else {
+                msgEl.innerText = "Cần cố gắng nhiều hơn! Hãy ôn tập kĩ lại bài giảng trên lớp.";
+                msgEl.className = "text-xl font-bold mb-4 text-red-600";
+            }
+
+            sendDataToSheet();
+        }
+
+        function restartQuiz() {
+            startQuiz();
+        }
+
+        function sendDataToSheet() {
+            if (GOOGLE_WEB_APP_URL === "YOUR_GOOGLE_SCRIPT_WEB_APP_URL_HERE") return;
+
+            const data = {
+                name: studentInfo.name,
+                class: studentInfo.class,
+                score: correctAnswers,
+                total: 44,
+                attempts: studentInfo.attempts
+            };
+
+            fetch(GOOGLE_WEB_APP_URL, {
+                method: 'POST',
+                mode: 'no-cors',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            }).then(() => console.log("Gửi điểm thành công."))
+              .catch(error => console.error('Lỗi khi gửi dữ liệu:', error));
+        }
+    </script>
+</body>
+</html>
